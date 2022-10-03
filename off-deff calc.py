@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 #Creates a DataFrame of the team's pokemon
 def create_team_df(team):
@@ -60,60 +61,67 @@ def create_chart(team_df):
         print("There was an error with your team size")
         return 0
 
-    df = pd.DataFrame(data=d, index=['Normal', 'Fire', 'Water', 'Electric', 'Grass', 'Ice', 'Fighting', 'Poison', 'Ground',
+    df = pd.DataFrame(data=d, index=['Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting', 'Poison', 'Ground',
                                      'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'])
     return df
 
+def tally(team_chart, team_df):
+    for types in range(18):
+        for pokemon in range(len(team_df)):
+            if team_chart.iloc[types,pokemon] > 1.0:
+                team_chart.iloc[types,6] += 1
+
+    return team_chart
+
 def calc_offense(team_df):
+    #Creates an empty chart for the Team
     team_chart = create_chart(team_df)
-    name = team_df.iloc[0].name
 
-    types = team_df.iloc[0].get(['Type 1', 'Type 2']).values
-    type_effectiveness = type_chart.loc[types[0]].values
+    #Loops through each pokemon
+    for pokemon in range(len(team_df)):
+        #Checks how many types the current pokemon has (1 or 2)
+        # and creates an object with only the type(s)
+        type2 = team_df.iloc[pokemon].get(['Type 2'])
+        if type2.isna().values[0]:
+            type = team_df.iloc[pokemon].get(['Type 1']).values
+        else:
+            type = team_df.iloc[pokemon].get(['Type 1', 'Type 2']).values
 
-    print(team_chart.iloc[0])
+        #Loops through each type in the chart for the current
+        # pokemon and sets it to the correct value based on the type chart
+        type_effectiveness = type_chart.loc[type[0]].values
+        for types in range(18):
+            team_chart.iloc[types,pokemon] = type_effectiveness[types] * team_chart.iloc[:,pokemon].values[types]
 
-    # team_chart[0, name] = type_effectiveness[0] * team_chart[name].get(['Normal']).values[0]
-    # team_chart[1, name] = type_effectiveness[1] * team_chart[name].get(['Fire']).values[0]
-    # team_chart[2, name] = type_effectiveness[2] * team_chart[name].get(['Water']).values[0]
-    # team_chart[3, name] = type_effectiveness[3] * team_chart[name].get(['Electric']).values[0]
-    # team_chart[4, name] = type_effectiveness[4] * team_chart[name].get(['Grass']).values[0]
-    # team_chart[5, name] = type_effectiveness[5] * team_chart[name].get(['Ice']).values[0]
-    # team_chart[6, name] = type_effectiveness[6] * team_chart[name].get(['Fighting']).values[0]
-    # team_chart[7, name] = type_effectiveness[7] * team_chart[name].get(['Poison']).values[0]
-    # team_chart[8, name] = type_effectiveness[8] * team_chart[name].get(['Ground']).values[0]
-    # team_chart[9, name] = type_effectiveness[9] * team_chart[name].get(['Flying']).values[0]
-    # team_chart[10, name] = type_effectiveness[10] * team_chart[name].get(['Psychic']).values[0]
-    # team_chart[11, name] = type_effectiveness[11] * team_chart[name].get(['Bug']).values[0]
-    # team_chart[12, name] = type_effectiveness[12] * team_chart[name].get(['Rock']).values[0]
-    # team_chart[13, name] = type_effectiveness[13] * team_chart[name].get(['Ghost']).values[0]
-    # team_chart[14, name] = type_effectiveness[14] * team_chart[name].get(['Dragon']).values[0]
-    # team_chart[15, name] = type_effectiveness[15] * team_chart[name].get(['Dark']).values[0]
-    # team_chart[16, name] = type_effectiveness[16] * team_chart[name].get(['Steel']).values[0]
-    # team_chart[17, name] = type_effectiveness[17] * team_chart[name].get(['Fairy']).values[0]
+        #Checks for a second typing and compares the value of the
+        # first typing to see which value is higher
+        if len(type) == 2:
+            type_effectiveness = type_chart.loc[type[1]].values
+            for types2 in range(18):
+                if (type_effectiveness[types2]) > team_chart.iloc[types2,pokemon]:
+                    team_chart.iloc[types2,pokemon] = type_effectiveness[types2]
+    
+    final_off_chart = tally(team_chart, team_df)
 
-    # print(team_chart)
-
-    return 0
+    return final_off_chart
 
 def calc_defense(team_df):
     create_chart(team_df)
 
     return 0
 
-dataset = "dataset\pokemon.csv"
+dataset = "pokemon.csv"
 pokedex = pd.read_csv(dataset)
 pokedex.set_index("Name", inplace=True)
 
-chart = "dataset\chart.csv"
+chart = "chart.csv"
 type_chart = pd.read_csv(chart)
 type_chart.set_index("Attacking", inplace=True)
 
 pokemmo_team = ["Torterra", "Alakazam", "Crobat", "Scizor", "Magnezone", "Kingdra"]
 pokemmo_df = create_team_df(pokemmo_team)
 
-calc_offense(pokemmo_df)
+offensive_chart = calc_offense(pokemmo_df)
 
-#USE THESE TO ACCESS EACH POKEMON'S TYPINGS
-#pokemmo_df.loc['POKEMON'].get(['Type 1', 'Type 2']).values[0] == 'TYPE 1':
-#pokemmo_df.loc['POKEMON'].get(['Type 1', 'Type 2']).values[1] == 'TYPE 2':
+print('                             OFFENSIVE CHART')
+print(offensive_chart)
